@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSRS GE Flip Suggester</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060e1c;--surface:#0c1e33;--surface2:#102540;--border:#1a3a58;--teal:#00d4b8;--teal-dim:#008f7c;--teal-dark:#005548;--gold:#f0bc3a;--gold-dim:#7a5e18;--purple:#b06ef3;--red:#f04060;--red-dim:#7a0020;--green:#00c853;--green-dim:#005c25;--orange:#ff8c00;--text:#c0d8ec;--muted:#4a7090;--muted2:#2a4a64;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 40% at 50% -10%,rgba(0,212,184,.05) 0%,transparent 70%);pointer-events:none;}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 14px 80px;}
+h1{font-family:'Cinzel Decorative',serif;font-size:clamp(16px,3.5vw,24px);color:var(--teal);text-align:center;text-shadow:0 0 20px rgba(0,212,184,.35);letter-spacing:2px;}
+.sub{text-align:center;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.hdiv{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);margin:8px auto 18px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:12px;}
+.ptitle{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.fl{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+input[type=number],input[type=text],select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;padding:7px 10px;border-radius:3px;outline:none;transition:border-color .15s;}
+input:focus,select:focus{border-color:var(--teal);}
+select option{background:var(--bg);}
+.lbtn{padding:8px 14px;background:var(--teal-dark);border:1px solid var(--teal-dim);border-radius:3px;color:var(--teal);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.lbtn:hover{background:var(--teal-dim);color:#000;}
+.lbtn:disabled{opacity:.4;cursor:not-allowed;}
+.lbtn.primary{background:var(--teal-dim);color:#000;}
+.lbtn.primary:hover{background:var(--teal);color:#000;}
+.status-line{font-size:11px;color:var(--muted);margin-top:6px;}
+.status-line.ok{color:var(--teal);}
+.status-line.err{color:var(--red);}
+.status-line.info{color:var(--gold);}
+.slots-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px;}
+.slot{border:1px dashed var(--border);border-radius:4px;padding:10px 8px;text-align:center;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all .2s;}
+.slot.active-buy{border-color:var(--teal-dim);background:rgba(0,212,184,.07);}
+.slot.empty{border-style:dashed;opacity:.5;}
+.slot-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.slot-name{font-size:12px;font-weight:700;color:var(--text);line-height:1.2;text-align:center;}
+.slot-price{font-size:13px;font-weight:700;color:var(--teal);}
+.slot-qty{font-size:10px;color:var(--muted);}
+.slot-profit{font-size:11px;font-weight:700;}
+.slot-profit.pos{color:var(--green);}
+.slot-profit.neg{color:var(--red);}
+.slot-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;margin-top:2px;font-family:'Barlow Condensed',sans-serif;transition:color .15s;}
+.slot-close:hover{color:var(--red);}
+.search-row{display:flex;gap:8px;}
+.search-row input{flex:1;}
+.autocomplete-wrap{position:relative;}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--teal-dim);border-top:none;border-radius:0 0 4px 4px;max-height:220px;overflow-y:auto;z-index:100;}
+.ac-item{padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:14px;}
+.ac-item:hover,.ac-item.focused{background:rgba(0,212,184,.1);}
+.ac-item .ac-margin{font-size:12px;color:var(--teal);font-weight:700;}
+.ac-item .ac-vol{font-size:11px;color:var(--muted);}
+.sugg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px;}
+.sugg-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px;transition:border-color .2s,transform .15s;cursor:pointer;}
+.sugg-card:hover{border-color:var(--teal-dim);transform:translateY(-1px);}
+.sugg-card.recommended{border-color:var(--teal-dim);background:rgba(0,212,184,.04);}
+.sugg-card.high-vol{border-color:var(--gold-dim);}
+.sugg-item-name{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.badge{display:inline-block;font-size:9px;letter-spacing:.8px;padding:1px 5px;border-radius:2px;font-weight:700;}
+.b-best{background:rgba(0,212,184,.15);color:var(--teal);border:1px solid var(--teal-dim);}
+.b-hot{background:rgba(240,188,58,.15);color:var(--gold);border:1px solid var(--gold-dim);}
+.b-safe{background:rgba(0,200,83,.12);color:var(--green);border:1px solid var(--green-dim);}
+.b-risk{background:rgba(240,64,96,.1);color:var(--red);border:1px solid var(--red-dim);}
+.price-row{display:flex;justify-content:space-between;align-items:center;margin:4px 0;font-size:13px;}
+.price-row .lbl{color:var(--muted);}
+.price-row .val{font-weight:700;}
+.price-row .val.buy{color:var(--teal);}
+.price-row .val.sell{color:var(--gold);}
+.margin-row{display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg);border-radius:3px;margin-top:8px;border:1px solid var(--border);}
+.margin-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.margin-val{font-size:18px;font-weight:700;color:var(--green);}
+.margin-val.negative{color:var(--red);}
+.vol-bar{height:3px;background:var(--muted2);border-radius:2px;margin:8px 0 4px;}
+.vol-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--teal-dim),var(--teal));}
+.vol-label{font-size:10px;color:var(--muted);display:flex;justify-content:space-between;}
+.add-to-slot-btn{width:100%;margin-top:10px;padding:7px;background:var(--teal-dark);border:1px solid var(--teal-dim);border-radius:3px;color:var(--teal);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
+.add-to-slot-btn:hover{background:var(--teal-dim);color:#000;}
+.add-to-slot-btn:disabled{opacity:.35;cursor:not-allowed;}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:12px;}
+.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:10px;text-align:center;}
+.stat-val{font-size:20px;font-weight:700;color:var(--teal);line-height:1;}
+.stat-val.gold{color:var(--gold);}
+.stat-val.green{color:var(--green);}
+.stat-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:3px;}
+.tabs{display:flex;gap:0;margin-bottom:14px;}
+.tab{flex:1;padding:9px;text-align:center;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--muted);transition:all .15s;}
+.tab:first-child{border-radius:3px 0 0 3px;}
+.tab:last-child{border-radius:0 3px 3px 0;border-left:none;}
+.tab:not(:first-child):not(:last-child){border-left:none;}
+.tab.active{background:var(--teal-dark);border-color:var(--teal);color:var(--teal);}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--teal-dark);border-top-color:var(--teal);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-overlay{text-align:center;padding:40px;color:var(--muted);font-size:13px;letter-spacing:1px;}
+.flip-table{width:100%;border-collapse:collapse;font-size:13px;}
+.flip-table th{text-align:left;padding:7px 10px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border);}
+.flip-table td{padding:7px 10px;border-bottom:1px solid rgba(26,58,88,.25);}
+.flip-table tr:hover td{background:rgba(0,212,184,.03);}
+.profit-pos{color:var(--green);font-weight:700;}
+.profit-neg{color:var(--red);font-weight:700;}
+.gp-hint{font-size:11px;color:var(--teal);margin-top:3px;}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fpill{padding:4px 12px;border:1px solid var(--border);border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;background:var(--bg);color:var(--muted);transition:all .15s;}
+.fpill.active{background:var(--teal-dark);border-color:var(--teal);color:var(--teal);}
+.fpill:hover:not(.active){border-color:var(--teal-dim);color:var(--teal);}
+.notif{position:fixed;bottom:20px;right:20px;padding:10px 16px;background:var(--teal-dark);border:1px solid var(--teal);border-radius:4px;color:var(--teal);font-size:13px;font-weight:700;letter-spacing:1px;z-index:1000;animation:fadeIn .2s ease;pointer-events:none;}
+.notif.error{background:rgba(240,64,96,.2);border-color:var(--red);color:var(--red);}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.spread-good{color:var(--green);}
+.spread-med{color:var(--gold);}
+.spread-poor{color:var(--red);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+.empty-state .icon{font-size:36px;margin-bottom:10px;}
+.cors-banner{background:rgba(240,188,58,.08);border:1px solid var(--gold-dim);border-radius:4px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--gold);line-height:1.6;}
+.cors-banner strong{display:block;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase;font-size:11px;}
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr 1fr;}.slots-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:500px){.slots-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GE Flip Suggester</h1>
+  <div class="sub">Grand Exchange &middot; Real-time Data &middot; Up to 6 Slots</div>
+  <div class="hdiv"></div>
+
+  <div class="cors-banner" id="corsBanner" style="display:none;">
+    <strong>&#9888; Demo Mode &mdash; Live Prices Unavailable</strong>
+    The OSRS Wiki prices API blocks browser requests from GitHub Pages (CORS). Prices shown are realistic demo data, not live.
+    To get real prices: open this file locally, or set up a Cloudflare Worker proxy (see README).
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">Your Setup</div>
+    <div class="g3">
+      <div>
+        <label class="fl">GP Available</label>
+        <input type="number" id="gpInput" placeholder="e.g. 5000000" min="0" oninput="onGpChange()">
+        <div class="gp-hint" id="gpHint"></div>
+      </div>
+      <div>
+        <label class="fl">Active GE Slots</label>
+        <input type="number" id="slotsUsed" value="0" min="0" max="6" readonly style="cursor:default;opacity:.7;">
+      </div>
+      <div>
+        <label class="fl">Risk Tolerance</label>
+        <select id="riskSelect" onchange="refreshSuggestions()">
+          <option value="low">Low - Safe, steady items</option>
+          <option value="medium" selected>Medium - Balanced</option>
+          <option value="high">High - Max profit</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="lbtn primary" onclick="loadAllPrices()" id="loadBtn">Fetch Live Prices</button>
+      <div class="status-line" id="loadStatus"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">GE Slots <span style="font-size:11px;color:var(--muted);float:right;" id="slotsSummary"></span></div>
+    <div class="slots-grid" id="slotsGrid"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('suggestions')" id="tab-suggestions">Suggestions</div>
+    <div class="tab" onclick="switchTab('search')" id="tab-search">Search Item</div>
+    <div class="tab" onclick="switchTab('history')" id="tab-history">Flip Log</div>
+  </div>
+
+  <div id="pane-suggestions">
+    <div class="stat-row" id="statsRow"></div>
+    <div class="filter-pills">
+      <div class="fpill active" data-filter="all" onclick="setFilter('all')">All</div>
+      <div class="fpill" data-filter="best_margin" onclick="setFilter('best_margin')">Best Margin</div>
+      <div class="fpill" data-filter="high_vol" onclick="setFilter('high_vol')">High Volume</div>
+      <div class="fpill" data-filter="fast_flip" onclick="setFilter('fast_flip')">Fast Flip</div>
+      <div class="fpill" data-filter="safe" onclick="setFilter('safe')">Safe Picks</div>
+    </div>
+    <div id="suggestionCards"><div class="loading-overlay"><span class="spinner"></span>Fetching live GE prices...</div></div>
+  </div>
+
+  <div id="pane-search" style="display:none;">
+    <div class="panel">
+      <div class="ptitle">Search Grand Exchange Item</div>
+      <div class="autocomplete-wrap">
+        <div class="search-row">
+          <input type="text" id="searchInput" placeholder="Type item name..." oninput="onSearch()" onkeydown="onSearchKey(event)" autocomplete="off">
+          <button class="lbtn" onclick="clearSearch()">Clear</button>
+        </div>
+        <div class="autocomplete-list" id="acList" style="display:none;"></div>
+      </div>
+    </div>
+    <div id="searchResult"></div>
+  </div>
+
+  <div id="pane-history" style="display:none;">
+    <div class="panel">
+      <div class="ptitle">Completed Flips This Session</div>
+      <div id="historyContent"><div class="empty-state"><div class="icon">&#x1F4CB;</div>No flips logged yet.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATE={prices:{},mapping:[],vol5m:{},vol1h:{},loaded:false,slots:new Array(6).fill(null),flipHistory:[],activeFilter:'all',activeTab:'suggestions',suggestions:[]};
+const BASE='https://prices.runescape.wiki/api/v1/osrs';
+const fmt=n=>{if(n===null||n===undefined||isNaN(n))return'--';if(Math.abs(n)>=1e9)return(n/1e9).toFixed(1)+'B';if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M';if(Math.abs(n)>=1e3)return(n/1e3).toFixed(1)+'K';return n.toLocaleString();};
+const fmtGp=n=>fmt(n)+' gp';
+const tax=price=>price>=100?Math.floor(price*0.01):0;
+const netMargin=(buy,sell)=>sell-buy-tax(sell);
+const roi=(buy,sell)=>buy>0?((netMargin(buy,sell)/buy)*100).toFixed(1):0;
+function notify(msg,isError=false){const el=document.createElement('div');el.className='notif'+(isError?' error':'');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}
+function getGp(){return parseInt(document.getElementById('gpInput').value)||0;}
+function onGpChange(){const gp=getGp();document.getElementById('gpHint').textContent=gp>0?'= '+fmtGp(gp):'';if(STATE.loaded)refreshSuggestions();}
+function slotsUsed(){return STATE.slots.filter(s=>s!==null).length;}
+function slotsAvailable(){return STATE.slots.filter(s=>s===null).length;}
+async function loadAllPrices(){
+  const btn=document.getElementById('loadBtn'),status=document.getElementById('loadStatus');
+  btn.disabled=true;status.className='status-line info';status.innerHTML='<span class="spinner"></span>Fetching mapping...';
+  try{
+    const mRes=await fetch(BASE+'/mapping');STATE.mapping=await mRes.json();
+    status.innerHTML='<span class="spinner"></span>Fetching latest prices...';
+    const pRes=await fetch(BASE+'/latest');const pData=await pRes.json();STATE.prices=pData.data||pData;
+    status.innerHTML='<span class="spinner"></span>Fetching volume data...';
+    const vRes=await fetch(BASE+'/5m');const vData=await vRes.json();STATE.vol5m=vData.data||vData;
+    const hRes=await fetch(BASE+'/1h');const hData=await hRes.json();STATE.vol1h=hData.data||hData;
+    STATE.loaded=true;status.className='status-line ok';
+    status.textContent='Loaded '+STATE.mapping.length+' items - '+new Date().toLocaleTimeString();
+    document.getElementById('suggestionCards').innerHTML='';
+    refreshSuggestions();renderSlots();
+  }catch(e){
+    status.className='status-line err';status.textContent='CORS blocked - running demo mode';
+    document.getElementById('corsBanner').style.display='block';
+    loadMockData();
+  }finally{btn.disabled=false;}
+}
+function loadMockData(){
+  const items=[{id:4151,name:'Abyssal whip',limit:70,members:true},{id:11802,name:'Bandos chestplate',limit:8,members:true},{id:11804,name:'Bandos tassets',limit:8,members:true},{id:12006,name:'Armadyl chestplate',limit:8,members:true},{id:4153,name:'Granite maul',limit:70,members:true},{id:21034,name:'Toxic blowpipe',limit:8,members:true},{id:1615,name:'Yew logs',limit:25000,members:false},{id:1597,name:'Magic logs',limit:25000,members:false},{id:2363,name:'Flax',limit:10000,members:false},{id:385,name:'Shark',limit:20000,members:true},{id:5295,name:'Torstol',limit:11000,members:true},{id:567,name:'Death rune',limit:18000,members:false},{id:560,name:'Blood rune',limit:18000,members:true},{id:9193,name:'Dragon dart tip',limit:11000,members:true},{id:11230,name:'Saradomin sword',limit:8,members:true},{id:4587,name:'Dragon scimitar',limit:70,members:true},{id:1359,name:'Adamant bar',limit:13000,members:false},{id:2364,name:'Bowstring',limit:10000,members:false},{id:5313,name:'Snapdragon seed',limit:200,members:true},{id:5302,name:'Ranarr seed',limit:200,members:true},{id:6571,name:'Onyx',limit:11000,members:true},{id:2577,name:'Robin hood hat',limit:8,members:true},{id:7462,name:'Barrows gloves',limit:1,members:true},{id:4675,name:'Abyssal dagger',limit:8,members:true}];
+  STATE.mapping=items.map(i=>({...i,lowalch:0,highalch:0,value:0,examine:'',icon:''}));
+  const mp={4151:{high:1620000,low:1600000},11802:{high:21500000,low:21000000},11804:{high:24000000,low:23500000},12006:{high:19000000,low:18800000},4153:{high:350000,low:340000},21034:{high:8200000,low:8050000},1615:{high:315,low:305},1597:{high:910,low:890},2363:{high:35,low:30},385:{high:1050,low:1020},5295:{high:12000,low:11500},567:{high:185,low:180},560:{high:310,low:300},9193:{high:2400,low:2350},11230:{high:980000,low:960000},4587:{high:60000,low:58000},1359:{high:2600,low:2500},2364:{high:215,low:205},5313:{high:145000,low:140000},5302:{high:55000,low:53000},6571:{high:2100000,low:2050000},2577:{high:820000,low:800000},7462:{high:780000,low:760000},4675:{high:3400000,low:3350000}};
+  STATE.prices=mp;
+  STATE.vol5m=Object.fromEntries(Object.entries(mp).map(([id,p])=>[id,{avgHighPrice:p.high,avgLowPrice:p.low,highPriceVolume:Math.floor(Math.random()*500+50),lowPriceVolume:Math.floor(Math.random()*500+50)}]));
+  STATE.vol1h=Object.fromEntries(Object.entries(mp).map(([id,p])=>[id,{avgHighPrice:p.high,avgLowPrice:p.low,highPriceVolume:Math.floor(Math.random()*3000+200),lowPriceVolume:Math.floor(Math.random()*3000+200)}]));
+  STATE.loaded=true;
+  document.getElementById('loadStatus').className='status-line info';
+  document.getElementById('loadStatus').textContent='DEMO MODE - not live prices';
+  refreshSuggestions();renderSlots();
+}
+function buildSuggestions(){
+  const gp=getGp(),risk=document.getElementById('riskSelect').value;
+  if(slotsUsed()>=6)return[];
+  const items=[];
+  STATE.mapping.forEach(item=>{
+    const p=STATE.prices[item.id];if(!p||!p.high||!p.low||p.high<=0||p.low<=0)return;
+    const buyAt=p.low,sellAt=p.high,margin=netMargin(buyAt,sellAt);
+    if(margin<=0)return;
+    const roiPct=parseFloat(roi(buyAt,sellAt));
+    const v1h=STATE.vol1h[item.id],totalVol1h=v1h?(v1h.highPriceVolume||0)+(v1h.lowPriceVolume||0):0;
+    const v5m=STATE.vol5m[item.id],totalVol5m=v5m?(v5m.highPriceVolume||0)+(v5m.lowPriceVolume||0):0;
+    if(risk==='low'&&(roiPct<0.5||buyAt>5000000))return;
+    if(risk==='medium'&&roiPct<0.3)return;
+    if(risk==='high'&&margin<500)return;
+    if(gp>0&&buyAt>gp)return;
+    const maxQty=gp>0?Math.min(Math.floor(gp/buyAt),item.limit||999):(item.limit||1);
+    if(maxQty<1)return;
+    const potProfit=margin*maxQty;
+    const volScore=Math.min(totalVol1h/1000,10),roiScore=Math.min(roiPct*10,30),profitScore=Math.min(potProfit/100000,30);
+    const score=roiScore+volScore+profitScore;
+    const tags=[];
+    if(roiPct>=2)tags.push('best_margin');
+    if(totalVol1h>=1000)tags.push('high_vol');
+    if(totalVol5m>=200)tags.push('fast_flip');
+    if(roiPct>=1&&buyAt<500000)tags.push('safe');
+    items.push({id:item.id,name:item.name,limit:item.limit,members:item.members,buyAt,sellAt,margin,roiPct,potProfit,maxQty,totalVol1h,totalVol5m,tags,score});
+  });
+  items.sort((a,b)=>b.score-a.score);
+  return items.slice(0,60);
+}
+function setFilter(f){STATE.activeFilter=f;document.querySelectorAll('.fpill').forEach(p=>{p.classList.toggle('active',p.dataset.filter===f);});renderSuggestionCards();}
+function refreshSuggestions(){if(!STATE.loaded)return;STATE.suggestions=buildSuggestions();renderStats();renderSuggestionCards();}
+function renderStats(){
+  const gp=getGp(),avail=slotsAvailable(),best=STATE.suggestions[0];
+  document.getElementById('statsRow').innerHTML='<div class="stat-card"><div class="stat-val">'+avail+'</div><div class="stat-lbl">Slots Free</div></div><div class="stat-card"><div class="stat-val gold">'+fmtGp(gp)+'</div><div class="stat-lbl">GP Budget</div></div><div class="stat-card"><div class="stat-val">'+STATE.suggestions.length+'</div><div class="stat-lbl">Options Found</div></div><div class="stat-card"><div class="stat-val green">'+(best?fmtGp(best.potProfit):'--')+'</div><div class="stat-lbl">Best Est. Profit</div></div>';
+}
+function renderSuggestionCards(){
+  const container=document.getElementById('suggestionCards');
+  let list=STATE.suggestions;
+  if(STATE.activeFilter!=='all')list=list.filter(s=>s.tags.includes(STATE.activeFilter));
+  if(!list.length){container.innerHTML='<div class="empty-state"><div class="icon">&#x1F50E;</div><div>No flips match your filter / GP budget.</div></div>';return;}
+  const maxVol=Math.max(...list.map(s=>s.totalVol1h||1),1);
+  const cards=list.slice(0,24).map((s,i)=>{
+    const isFirst=i===0&&STATE.activeFilter==='all',isHighVol=s.totalVol1h>=2000;
+    const cardClass=isFirst?'sugg-card recommended':isHighVol?'sugg-card high-vol':'sugg-card';
+    const volPct=Math.min((s.totalVol1h/maxVol)*100,100).toFixed(0);
+    const slotsFull=slotsAvailable()===0,alreadyTracked=STATE.slots.some(sl=>sl&&sl.itemId===s.id);
+    let badges='';
+    if(isFirst)badges+='<span class="badge b-best">TOP PICK</span>';
+    if(s.tags.includes('high_vol'))badges+='<span class="badge b-hot">HIGH VOL</span>';
+    if(s.tags.includes('safe'))badges+='<span class="badge b-safe">SAFE</span>';
+    if(s.roiPct>=3)badges+='<span class="badge b-risk">HIGH ROI</span>';
+    const sc=s.roiPct>=2?'spread-good':s.roiPct>=1?'spread-med':'spread-poor';
+    return '<div class="'+cardClass+'" onclick="selectCard('+s.id+')">'
+      +'<div class="sugg-item-name">'+s.name+' '+badges+'</div>'
+      +'<div class="price-row"><span class="lbl">Buy at (low)</span><span class="val buy">'+fmtGp(s.buyAt)+'</span></div>'
+      +'<div class="price-row"><span class="lbl">Sell at (high)</span><span class="val sell">'+fmtGp(s.sellAt)+'</span></div>'
+      +'<div class="margin-row"><div><div class="margin-label">Net margin/item</div><div class="margin-val'+(s.margin<0?' negative':'')+'">'+fmtGp(s.margin)+'</div></div>'
+      +'<div style="text-align:right;"><div class="margin-label">ROI</div><div class="margin-val '+sc+'">'+s.roiPct+'%</div></div></div>'
+      +'<div class="vol-bar"><div class="vol-fill" style="width:'+volPct+'%"></div></div>'
+      +'<div class="vol-label"><span>'+fmt(s.totalVol1h)+'/hr</span><span>Limit: '+fmt(s.limit)+'</span></div>'
+      +'<div class="price-row" style="margin-top:4px;"><span class="lbl">Max qty @ budget</span><span class="val">'+fmt(s.maxQty)+'</span></div>'
+      +'<div class="price-row"><span class="lbl">Est. total profit</span><span class="val buy">'+fmtGp(s.potProfit)+'</span></div>'
+      +'<button class="add-to-slot-btn" onclick="event.stopPropagation();addToSlot('+s.id+')" '+(slotsFull||alreadyTracked?'disabled':'')+'>'+(alreadyTracked?'Already Tracking':slotsFull?'All Slots Full':'+ Track in Slot')+'</button>'
+      +'</div>';
+  }).join('');
+  container.innerHTML='<div class="sugg-grid">'+cards+'</div>';
+}
+function addToSlot(itemId){
+  const emptyIdx=STATE.slots.findIndex(s=>s===null);
+  if(emptyIdx===-1){notify('All 6 GE slots in use!',true);return;}
+  const item=STATE.mapping.find(m=>m.id===itemId),p=STATE.prices[itemId];
+  if(!item||!p)return;
+  STATE.slots[emptyIdx]={itemId,name:item.name,qty:null,buyPrice:p.low,sellPrice:p.high,type:'buy',addedAt:Date.now()};
+  document.getElementById('slotsUsed').value=slotsUsed();
+  renderSlots();refreshSuggestions();
+  notify(item.name+' added to slot '+(emptyIdx+1));
+}
+function removeSlot(idx){STATE.slots[idx]=null;document.getElementById('slotsUsed').value=slotsUsed();renderSlots();refreshSuggestions();renderSuggestionCards();}
+function markSold(idx){
+  const slot=STATE.slots[idx];if(!slot)return;
+  const sellP=STATE.prices[slot.itemId],sellAt=sellP?sellP.high:slot.sellPrice,qty=slot.qty||1;
+  const profit=netMargin(slot.buyPrice,sellAt)*qty;
+  STATE.flipHistory.unshift({name:slot.name,buyAt:slot.buyPrice,sellAt,qty,profit,ts:new Date().toLocaleTimeString()});
+  STATE.slots[idx]=null;
+  document.getElementById('slotsUsed').value=slotsUsed();
+  renderSlots();renderHistory();refreshSuggestions();
+  notify(slot.name+' logged! Est. profit: '+fmtGp(profit));
+}
+function renderSlots(){
+  const grid=document.getElementById('slotsGrid');
+  document.getElementById('slotsSummary').textContent=slotsUsed()+'/6 used';
+  grid.innerHTML=STATE.slots.map((slot,i)=>{
+    if(!slot)return'<div class="slot empty"><div class="slot-label">Slot '+(i+1)+'</div><div style="font-size:22px;color:var(--muted2);">+</div><div style="font-size:10px;color:var(--muted2);">Empty</div></div>';
+    const p=STATE.prices[slot.itemId],curSell=p?p.high:slot.sellPrice,margin=netMargin(slot.buyPrice,curSell);
+    return'<div class="slot active-buy"><div class="slot-label">Slot '+(i+1)+'</div><div class="slot-name">'+slot.name+'</div><div class="slot-price">'+fmtGp(slot.buyPrice)+'</div><div class="slot-qty">Sell >= '+fmtGp(curSell)+'</div><div class="slot-profit '+(margin>0?'pos':'neg')+'">'+fmtGp(margin)+'/ea</div><div style="display:flex;gap:4px;margin-top:4px;"><button class="slot-close" onclick="markSold('+i+')" title="Mark sold">&#10003; Sold</button><button class="slot-close" onclick="removeSlot('+i+')" title="Remove">&#10005;</button></div></div>';
+  }).join('');
+}
+let searchTimeout;
+function onSearch(){clearTimeout(searchTimeout);searchTimeout=setTimeout(doSearch,200);}
+function doSearch(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim(),list=document.getElementById('acList');
+  if(!q||q.length<2||!STATE.loaded){list.style.display='none';return;}
+  const matches=STATE.mapping.filter(m=>m.name.toLowerCase().includes(q)).slice(0,15).map(m=>{const p=STATE.prices[m.id];const margin=p&&p.high&&p.low?netMargin(p.low,p.high):null;return{...m,p,margin};});
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map((m,i)=>'<div class="ac-item" data-idx="'+i+'" onclick="selectSearchItem('+m.id+')" onmouseover="focusAc('+i+')"><span>'+m.name+'</span><span style="display:flex;gap:8px;align-items:center;">'+(m.margin!==null?'<span class="ac-margin">'+fmtGp(m.margin)+'</span>':'')+'<span class="ac-vol">'+(m.members?'M':'F2P')+'</span></span></div>').join('');
+  list.style.display='block';
+}
+let focusedAc=-1;
+function focusAc(i){focusedAc=i;document.querySelectorAll('.ac-item').forEach((el,j)=>el.classList.toggle('focused',j===i));}
+function onSearchKey(e){
+  const items=document.querySelectorAll('.ac-item');
+  if(e.key==='ArrowDown'){focusedAc=Math.min(focusedAc+1,items.length-1);focusAc(focusedAc);}
+  else if(e.key==='ArrowUp'){focusedAc=Math.max(focusedAc-1,0);focusAc(focusedAc);}
+  else if(e.key==='Enter'&&focusedAc>=0){items[focusedAc].click();}
+  else if(e.key==='Escape'){document.getElementById('acList').style.display='none';}
+}
+function selectSearchItem(itemId){
+  document.getElementById('acList').style.display='none';
+  const item=STATE.mapping.find(m=>m.id===itemId);if(!item)return;
+  document.getElementById('searchInput').value=item.name;
+  renderItemDetail(itemId);
+}
+function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('acList').style.display='none';document.getElementById('searchResult').innerHTML='';}
+function renderItemDetail(itemId){
+  const item=STATE.mapping.find(m=>m.id===itemId),p=STATE.prices[itemId],v1h=STATE.vol1h[itemId],v5m=STATE.vol5m[itemId];
+  if(!item||!p){document.getElementById('searchResult').innerHTML='<div class="panel"><div class="status-line err">No price data for this item.</div></div>';return;}
+  const margin=p.high&&p.low?netMargin(p.low,p.high):0,roiPct=p.low?roi(p.low,p.high):0;
+  const vol1hTotal=v1h?(v1h.highPriceVolume||0)+(v1h.lowPriceVolume||0):0,vol5mTotal=v5m?(v5m.highPriceVolume||0)+(v5m.lowPriceVolume||0):0;
+  const gp=getGp(),maxQty=gp>0&&p.low?Math.min(Math.floor(gp/p.low),item.limit||9999):(item.limit||9999),potProfit=margin*maxQty;
+  const slotsFull=slotsAvailable()===0,alreadyTracked=STATE.slots.some(s=>s&&s.itemId===itemId);
+  document.getElementById('searchResult').innerHTML='<div class="panel"><div class="sugg-item-name" style="font-size:18px;margin-bottom:14px;">'+item.name+' '+(item.members?'<span class="badge b-safe">MEMBERS</span>':'<span class="badge b-best">F2P</span>')+'</div><div class="g3" style="gap:12px;margin-bottom:14px;"><div class="stat-card"><div class="stat-val" style="color:var(--teal);">'+(p.low?fmtGp(p.low):'--')+'</div><div class="stat-lbl">Buy at (low)</div></div><div class="stat-card"><div class="stat-val" style="color:var(--gold);">'+(p.high?fmtGp(p.high):'--')+'</div><div class="stat-lbl">Sell at (high)</div></div><div class="stat-card"><div class="stat-val" style="color:'+(margin>0?'var(--green)':'var(--red)')+';">'+fmtGp(margin)+'</div><div class="stat-lbl">Net Margin</div></div></div><div class="margin-row" style="margin-bottom:12px;"><div><div class="margin-label">ROI after 1% tax</div><div class="margin-val">'+roiPct+'%</div></div><div style="text-align:right;"><div class="margin-label">GE Buy Limit</div><div class="margin-val" style="font-size:16px;">'+fmt(item.limit)+'</div></div></div><div class="g2" style="gap:12px;margin-bottom:12px;"><div class="stat-card"><div class="stat-val">'+fmt(vol5mTotal)+'</div><div class="stat-lbl">Volume (5 min)</div></div><div class="stat-card"><div class="stat-val">'+fmt(vol1hTotal)+'</div><div class="stat-lbl">Volume (1 hr)</div></div></div>'+(gp>0?'<div class="margin-row" style="margin-bottom:12px;"><div><div class="margin-label">Max qty at budget</div><div class="margin-val" style="font-size:16px;">'+fmt(maxQty)+'</div></div><div style="text-align:right;"><div class="margin-label">Est. Total Profit</div><div class="margin-val'+(potProfit>0?'':' negative')+'">'+fmtGp(potProfit)+'</div></div></div>':'')+'<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="lbtn primary" onclick="addToSlot('+itemId+')" '+(slotsFull||alreadyTracked?'disabled':'')+'>'+(alreadyTracked?'Already Tracking':slotsFull?'All Slots Full':'+ Track in Slot')+'</button><button class="lbtn" onclick="window.open(\'https://prices.runescape.wiki/osrs/item/'+itemId+'\',\'_blank\')">Wiki Price Graph</button></div></div>';
+}
+function selectCard(id){switchTab('search');const item=STATE.mapping.find(m=>m.id===id);if(item)document.getElementById('searchInput').value=item.name;renderItemDetail(id);}
+function renderHistory(){
+  const el=document.getElementById('historyContent');
+  if(!STATE.flipHistory.length){el.innerHTML='<div class="empty-state"><div class="icon">&#x1F4CB;</div>No flips logged yet.</div>';return;}
+  const totalProfit=STATE.flipHistory.reduce((s,f)=>s+f.profit,0);
+  el.innerHTML='<div class="stat-row" style="margin-bottom:14px;"><div class="stat-card"><div class="stat-val green">'+fmtGp(totalProfit)+'</div><div class="stat-lbl">Session Profit</div></div><div class="stat-card"><div class="stat-val">'+STATE.flipHistory.length+'</div><div class="stat-lbl">Flips Done</div></div></div><table class="flip-table"><thead><tr><th>Item</th><th>Bought</th><th>Sold</th><th>Qty</th><th>Profit</th><th>Time</th></tr></thead><tbody>'+STATE.flipHistory.map(f=>'<tr><td style="font-weight:700;">'+f.name+'</td><td>'+fmtGp(f.buyAt)+'</td><td>'+fmtGp(f.sellAt)+'</td><td>'+fmt(f.qty)+'</td><td class="'+(f.profit>=0?'profit-pos':'profit-neg')+'">'+fmtGp(f.profit)+'</td><td style="color:var(--muted);font-size:11px;">'+f.ts+'</td></tr>').join('')+'</tbody></table>';
+}
+function switchTab(t){
+  STATE.activeTab=t;
+  ['suggestions','search','history'].forEach(id=>{document.getElementById('pane-'+id).style.display=id===t?'':'none';document.getElementById('tab-'+id).classList.toggle('active',id===t);});
+  if(t==='history')renderHistory();
+}
+renderSlots();
+renderHistory();
+loadAllPrices();
+</script>
+</body>
+</html>
