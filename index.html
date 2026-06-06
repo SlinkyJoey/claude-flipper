@@ -126,8 +126,7 @@ select option{background:var(--bg);}
 
   <div class="cors-banner" id="corsBanner" style="display:none;">
     <strong>&#9888; Demo Mode &mdash; Live Prices Unavailable</strong>
-    The OSRS Wiki prices API blocks browser requests from GitHub Pages (CORS). Prices shown are realistic demo data, not live.
-    To get real prices: open this file locally, or set up a Cloudflare Worker proxy (see README).
+    Could not reach the price proxy. Prices shown are demo data only.
   </div>
 
   <div class="panel">
@@ -204,7 +203,7 @@ select option{background:var(--bg);}
 
 <script>
 const STATE={prices:{},mapping:[],vol5m:{},vol1h:{},loaded:false,slots:new Array(6).fill(null),flipHistory:[],activeFilter:'all',activeTab:'suggestions',suggestions:[]};
-const BASE='https://prices.runescape.wiki/api/v1/osrs';
+const BASE='https://osrs-price-proxy.josiahtry132.workers.dev';
 const fmt=n=>{if(n===null||n===undefined||isNaN(n))return'--';if(Math.abs(n)>=1e9)return(n/1e9).toFixed(1)+'B';if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M';if(Math.abs(n)>=1e3)return(n/1e3).toFixed(1)+'K';return n.toLocaleString();};
 const fmtGp=n=>fmt(n)+' gp';
 const tax=price=>price>=100?Math.floor(price*0.01):0;
@@ -226,11 +225,11 @@ async function loadAllPrices(){
     const vRes=await fetch(BASE+'/5m');const vData=await vRes.json();STATE.vol5m=vData.data||vData;
     const hRes=await fetch(BASE+'/1h');const hData=await hRes.json();STATE.vol1h=hData.data||hData;
     STATE.loaded=true;status.className='status-line ok';
-    status.textContent='Loaded '+STATE.mapping.length+' items - '+new Date().toLocaleTimeString();
+    status.textContent='Live prices loaded - '+STATE.mapping.length+' items - '+new Date().toLocaleTimeString();
     document.getElementById('suggestionCards').innerHTML='';
     refreshSuggestions();renderSlots();
   }catch(e){
-    status.className='status-line err';status.textContent='CORS blocked - running demo mode';
+    status.className='status-line err';status.textContent='Proxy unreachable - running demo mode';
     document.getElementById('corsBanner').style.display='block';
     loadMockData();
   }finally{btn.disabled=false;}
